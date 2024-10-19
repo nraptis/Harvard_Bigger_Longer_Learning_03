@@ -54,14 +54,6 @@ def all_pages(corpus):
                 result.add(value)
     return list(result)
 
-def num_links(corpus, target):
-    result = 0
-    for key in corpus.keys():
-        for value in corpus[key]:
-            if value == target:
-                result += 1
-    return result
-
 #
 #
 # should return a dictionary representing the probability distribution over which page a random surfer would visit next, given a corpus of pages, a current page, and a damping factor.
@@ -69,9 +61,8 @@ def num_links(corpus, target):
 #The return value of the function should be a Python dictionary with one key for each page in the corpus. Each key should be mapped to a value representing the probability that a random surfer would choose that page next. The values in this returned probability distribution should sum to 1.
 #
 #
-def transition_model(corpus, page, damping_factor):
 
-    
+def transition_model(corpus, page, damping_factor):
 
     """
     Return a probability distribution over which page to visit next,
@@ -81,22 +72,24 @@ def transition_model(corpus, page, damping_factor):
     linked to by `page`. With probability `1 - damping_factor`, choose
     a link at random chosen from all pages in the corpus.
     """
-    pages = all_pages(corpus)
-    page_count = len(pages)
-    result = {}
 
+    pages_all = all_pages(corpus)
+    pages_all_count = len(pages_all)
+    
+    pages_links = corpus[page]
+    pages_links_count = len(pages_links)
+
+    result = {}
 
     damping_factor_inverse = (1.0 - damping_factor)
     
     #these sum up to damping_factor_inverse
-    for page in pages:
-        result[page] = damping_factor_inverse / float(page_count)
-
-    link_out_count = len(corpus[page])
+    for page in pages_all:
+        result[page] = damping_factor_inverse / pages_all_count
 
     #these sum up to damping_factor
-    for page in corpus[page]:
-        result[page] += damping_factor / float(link_out_count)
+    for page in pages_links:
+        result[page] += damping_factor / pages_links_count
 
     #these sum up to 1.0 (damping_factor_inverse + damping_factor)
     return result
@@ -111,7 +104,7 @@ def sample_pagerank(corpus, damping_factor, n):
     their estimated PageRank value (a value between 0 and 1). All
     PageRank values should sum to 1.
     """
-
+    
     pages = all_pages(corpus)
 
     result = {}
@@ -119,39 +112,56 @@ def sample_pagerank(corpus, damping_factor, n):
     for page in pages:
         result[page] = 0.0
 
-    if len(pages) > 0:
-
-        transition_model_pages = {}
-        transition_model_probabilities = {}
+    transition_model_pages = {}
+    transition_model_weights = {}
+    for page in pages:
+        _transition_model = transition_model(corpus, page, damping_factor)
+        transition_model_pages[page] = list(_transition_model.keys())
+        transition_model_weights[page] = list(_transition_model.values())
         
+    current_page = random.choice(pages)
 
-        for page in pages:
+    for _ in range(n):
+        result[current_page] += 1
+        _pages = transition_model_pages[current_page]
+        _weights = transition_model_weights[current_page]
+        current_page = random.choices(_pages, weights = _weights, k = 1)[0]
 
-            _values = []
-            _pages = []
-            _transition_model = transition_model(corpus, page, damping_factor)
-            for _page in _transition_model:
-                _pages.append(_page)
-                _values.append(_transition_model[_page])
-            transition_model_pages[page] = _pages
-            transition_model_probabilities[page] = _values
-            
-        current_page = random.choice(pages)
-
-        for _ in range(n):
-            result[current_page] += 1
-            current_page = random.choices(transition_model_pages[current_page], weights = transition_model_probabilities[current_page], k = 1)[0]
-
-    sum = 0.0
-    if n > 0:
-        for page in pages:
-            result[page] /= float(n)
-            sum += result[page]
-
-    print("sum iz ", sum)
+    for page in pages:
+        result[page] /= float(n)
 
     return result
 
+'''
+def sample_pagerank(corpus, damping_factor, n):
+
+    """
+    Return PageRank values for each page by sampling `n` pages
+    according to transition model, starting with a page at random.
+
+    Return a dictionary where keys are page names, and values are
+    their estimated PageRank value (a value between 0 and 1). All
+    PageRank values should sum to 1.
+    """
+
+    pages = list(corpus.keys())
+    result = {}
+    for page in pages:
+        result[page] = 0.0
+
+    odds = transition_model(corpus, page, damping_factor)
+    page = random.choice(pages)
+    for _ in range(0, n):
+        page_list = random.choices(list(odds.keys()), list(odds.values()))
+        page = page_list[0]
+        result[page] += 1.0
+        odds = transition_model(corpus, page, damping_factor)
+
+    for page in pages:
+        result[page] /= n
+
+    return result
+'''
 
 '''
 def sample_pagerank(corpus, damping_factor, n):
@@ -191,6 +201,7 @@ def sample_pagerank(corpus, damping_factor, n):
 
     return result
 '''
+
 
 
 def iterate_pagerank(corpus, damping_factor):
