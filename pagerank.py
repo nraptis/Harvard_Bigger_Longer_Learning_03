@@ -142,9 +142,9 @@ def iterate_pagerank(corpus, damping_factor):
     damping_factor_inverse = (1.0 - damping_factor)
 
     result = {}
-    for page in pages_all:
-        result[page] = 1 / pages_all_count
 
+    for page in pages_all:
+        result[page] = 1.0 / pages_all_count
 
     reverse_corpus = {}
 
@@ -158,15 +158,11 @@ def iterate_pagerank(corpus, damping_factor):
     for page in reverse_corpus:
         reverse_corpus[page] = list(reverse_corpus[page])
 
-    result = {}
-
-    for page in corpus:
-        result[page] = 1.0 / pages_all_count
-    
     fudge = 100000
     for _ in range(0, fudge):
         out_of_range = False
-        hold = copy.deepcopy(result)
+        hold = dict(result)
+
         for page in pages_all:
 
             # The left-hand-side of the equation...
